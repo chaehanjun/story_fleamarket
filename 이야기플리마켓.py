@@ -1,14 +1,9 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 import streamlit as st
 from datetime import datetime
 import qrcode
 from io import BytesIO
 import base64
+import pandas as pd  # 통계와 다운로드 기능을 위해 필요
 
 # 세션 상태에 stories 리스트 초기화
 if 'stories' not in st.session_state:
@@ -43,11 +38,16 @@ def add_story(title, author, content, product):
 # 이야기 검색 함수
 def search_stories(keyword):
     if not keyword:
-        return stories
+        return st.session_state['stories']
     keyword_lower = keyword.lower()
-    return [s for s in stories if keyword_lower in s['title'].lower() or keyword_lower in s['content'].lower() or keyword_lower in s['author'].lower() or keyword_lower in s['product'].lower()]
+    return [
+        s for s in st.session_state['stories']
+        if keyword_lower in s['title'].lower() or
+           keyword_lower in s['content'].lower() or
+           keyword_lower in s['author'].lower() or
+           keyword_lower in s['product'].lower()
+    ]
 
-# Streamlit 앱 UI
 st.set_page_config(page_title="이야기 플리마켓", layout="wide")
 st.title('이야기 플리마켓 스토리텔링 플랫폼 with QR 코드')
 
@@ -70,8 +70,8 @@ if menu == '이야기 등록':
 
 elif menu == '이야기 목록':
     st.header('등록된 이야기 목록')
-    if stories:
-        for story in reversed(stories):
+    if st.session_state['stories']:
+        for story in reversed(st.session_state['stories']):
             st.subheader(f"{story['title']} - {story['author']}")
             st.write(story['content'])
             if story['product']:
@@ -102,20 +102,21 @@ elif menu == '스토리 검색':
 
 elif menu == '통계':
     st.header('이야기 플리마켓 통계')
-    st.write(f"총 등록 이야기 수: {len(stories)}")
-    if stories:
-        df = pd.DataFrame(stories)
-        st.bar_chart(df['author'].value_counts())
-        st.bar_chart(df['product'].value_counts())
+    st.write(f"총 등록 이야기 수: {len(st.session_state['stories'])}")
+    if st.session_state['stories']:
+        df = pd.DataFrame(st.session_state['stories'])
+        if 'author' in df.columns and not df['author'].isnull().all():
+            st.bar_chart(df['author'].value_counts())
+        if 'product' in df.columns and not df['product'].isnull().all():
+            st.bar_chart(df['product'].value_counts())
     else:
         st.info('통계 데이터가 없습니다.')
 
 elif menu == '데이터 다운로드':
     st.header('이야기 데이터 다운로드')
-    if stories:
-        df = pd.DataFrame(stories)
+    if st.session_state['stories']:
+        df = pd.DataFrame(st.session_state['stories'])
         csv = df.to_csv(index=False).encode('utf-8-sig')
         st.download_button("CSV 다운로드", data=csv, file_name='stories.csv', mime='text/csv')
     else:
         st.info('다운로드할 데이터가 없습니다.')
-
