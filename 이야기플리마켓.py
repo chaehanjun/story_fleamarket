@@ -9,12 +9,11 @@ from datetime import datetime
 import qrcode
 from io import BytesIO
 import base64
-import pandas as pd
 
-# 데이터 저장 (임시 메모리 방식)
-stories = []
+# 세션 상태에 stories 리스트 초기화
+if 'stories' not in st.session_state:
+    st.session_state['stories'] = []
 
-# QR 코드 생성 함수
 def generate_qr_code(data):
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(data)
@@ -25,9 +24,8 @@ def generate_qr_code(data):
     img_str = base64.b64encode(buffered.getvalue()).decode()
     return img_str
 
-# 이야기 등록 함수
 def add_story(title, author, content, product):
-    story_id = len(stories) + 1
+    story_id = len(st.session_state['stories']) + 1
     story_url = f"https://storymarket.example.com/story/{story_id}"
     qr_code_img = generate_qr_code(story_url)
     story = {
@@ -40,7 +38,7 @@ def add_story(title, author, content, product):
         'qr_code': qr_code_img,
         'url': story_url
     }
-    stories.append(story)
+    st.session_state['stories'].append(story)
 
 # 이야기 검색 함수
 def search_stories(keyword):
